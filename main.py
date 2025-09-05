@@ -17,20 +17,20 @@ app = FastAPI(title="Tutorín API", version="0.1.0")
 
 from fastapi.middleware.cors import CORSMiddleware
 
-# Orígenes permitidos (frontend en local + futuro Vercel)
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://*.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    # Dominios permitidos explícitos
+    allow_origins=[
+        "http://localhost:3000",
+        "https://tutorin-web.vercel.app",   # tu dominio de producción en Vercel
+    ],
+    # (Opcional) regex para previews en Vercel (deploys por PR/branch)
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --- Endpoint de prueba ---
 @app.get("/ping")
