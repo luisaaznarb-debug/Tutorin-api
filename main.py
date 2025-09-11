@@ -1,4 +1,4 @@
-# main.py  (Pydantic v1 compatible)
+# main.py  (FastAPI + OpenAI, Pydantic v1)
 
 import os
 import re
@@ -6,8 +6,8 @@ from typing import List, Optional, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel  # ← IMPORT NECESARIO
 
-# OpenAI SDK v1
 from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -17,7 +17,7 @@ class Step(BaseModel):
     imageUrl: Optional[str] = None
 
 class ChatRequest(BaseModel):
-    # acepta ambos: "message" (nuevo) o "text" (legacy)
+    # acepta ambas claves desde el front
     text: Optional[str] = None
     message: Optional[str] = None
     grade: Optional[str] = "Primaria"
@@ -43,11 +43,8 @@ app.add_middleware(
 
 # ---------- Utilidades ----------
 def latexify(text: str) -> str:
-    # 2/3 -> $\frac{2}{3}$
     text = re.sub(r"(?<!\d)(\d{1,3})\s*/\s*(\d{1,3})(?!\d)", r"$\\frac{\1}{\2}$", text)
-    # x^2 -> x^{2}
     text = re.sub(r"([A-Za-z])\^(\d+)", r"\1^{\2}", text)
-    # 3*4 -> 3 \times 4
     text = text.replace("*", " \\times ")
     return text
 
@@ -79,7 +76,6 @@ def chat(req: ChatRequest):
 
     user_message = (req.message or req.text or "").strip()
     grade = (req.grade or "Primaria").strip()
-
     if not user_message:
         raise HTTPException(status_code=400, detail="El campo 'message'/'text' está vacío.")
 
