@@ -1,4 +1,19 @@
-.env
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# Entorno y herramientas
+.venv/
+env/
+dotenv/
+.env
+.env.*
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache/
+.mypy_cache/
+.coverage
+*.sqlite3
