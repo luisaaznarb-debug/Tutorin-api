@@ -40,9 +40,10 @@ class Step(BaseModel):
 
 class ChatRequest(BaseModel):
     # Nota: el front te envía "message"; mantenemos compatibilidad
-    message: str
-    grade: Optional[str] = None
-    history: Optional[List[str]] = None
+   message: Optional[str] = None
+   question: Optional[str] = None
+   grade: Optional[str] = None
+   history: Optional[List[str]] = None
 
 
 class ChatResponse(BaseModel):
@@ -195,7 +196,7 @@ def chat(req: ChatRequest):
       - Si detecta suma/resta de fracciones: devuelve PISTAS
       - Si no, guía genérica (una sola pista + pregunta)
     """
-    user_text = req.message or ""
+    user_text = (req.message or req.question or "").strip()
     norm = normalize_spanish_fractions(user_text)
 
     parsed = parse_fraction_expression(norm)
