@@ -1,79 +1,68 @@
-import os
-import re
-import math
-from typing import List, Optional
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import openai
+import os
+from dotenv import load_dotenv
 
-from tutorinSkills import engine, detectSkill, Step as SkillStep
+from tutorinskills import detectSkill, engine  # Importar funciones del módulo
 
-# =========================
-# Configuración & CORS
-# =========================
-def _origins_from_env() -> List[str]:
-    raw = os.getenv("FRONTEND_ORIGINS", "")
-    items = [x.strip() for x in raw.split(",") if x.strip()]
-    if not items:
-        items = ["http://localhost:3000"]
-    return items
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = FastAPI(title="Tutorín API")
+app = FastAPI()
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins_from_env(),
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# =========================
-# Modelos
-# =========================
-class Step(BaseModel):
-    text: str
-    imageUrl: Optional[str] = None
+@app.post("/chat")
+async def chat(request: Request):
+    try:
+        body = await request.json()
+        message = body.get("message", "")
+        grade = body.get("grade", "")
+        subject = body.get("subject", "")
+        hint_mode = body.get("hintMode", "default")
 
-class ChatRequest(BaseModel):
-    message: Optional[str] = None
-    question: Optional[str] = None
-    grade: Optional[str] = None
-    history: Optional[List[str]] = None
+        # Primero intentamos detectar una skill
+        skill_key = detectSkill(message)
 
-class ChatResponse(BaseModel):
-    steps: List[Step]
-    audioUrl: Optional[str] = None
+        if skill_key and skill_key in engine:
+            steps = engine[skill_key](message)
+            response_text = ""
+            for i, step in enumerate(steps, 1):
+                response_text += f"Paso {i}: {step.text}\n"
+                if hint_mode == "pictograms" and step.imageUrl:
+                    response_text += f"🖼️ {step.imageUrl}\n"
+            return {"text": response_text.strip()}
 
-# =========================
-# Endpoint principal
-# =========================
-@app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
-    user_text = (req.message or req.question or "").strip()
+        # Si no hay skill, usamos GPT-4o
+        system_prompt = (
+            "Eres Tutorín, un asistente virtual para niños de primaria. "
+            "Explica de forma clara, paso a paso y con ejemplos fáciles. "
+            "Si hintMode es 'pictograms', añade imágenes (ARASAAC) si puedes. "
+            "Tu tono es cercano, claro y alegre."
+        )
 
-    # Buscar skill automática
-    skill_id = detectSkill(user_text)
-    if skill_id and skill_id in engine:
-        raw_steps = engine[skill_id](user_text)
-        steps = [Step(text=s.text, imageUrl=s.imageUrl) for s in raw_steps]
-        return ChatResponse(steps=steps)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Curso: {grade}\nAsignatura: {subject}\nPregunta: {message}"}
+        ]
 
-    # Fallback básico si no encuentra
-    fallback = [
-        Step(text="Vamos a resolverlo paso a paso, pero no estoy seguro del tema."),
-        Step(text="¿Puedes darme un poco más de detalle sobre tu pregunta? 🧐"),
-    ]
-    return ChatResponse(steps=fallback)
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.6,
+            max_tokens=800,
+        )
 
-@app.post("/solve", response_model=ChatResponse)
-def solve(req: ChatRequest):
-    return chat(req)
+        reply = response.choices[0].message.content
+        return {"text": reply}
 
-@app.get("/ping")
-def ping():
-    return {"status": "ok", "name": "Tutorín está vivo 👋"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True)
+    except Exception as e:
+        return {"error": str(e)}
