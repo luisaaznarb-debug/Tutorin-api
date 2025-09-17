@@ -1,17 +1,17 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List
 import openai
-import os
-from dotenv import load_dotenv
+from tutorinskills import detectSkill, engine, Step
 
-from tutorinskills import detectSkill, engine  # Importar funciones del módulo
+# Configura tu clave de OpenAI
+openai.api_key = "TU_API_KEY"
 
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
+# Inicializa la app
 app = FastAPI()
 
-# CORS
+# Permitir CORS (para conectar con tu frontend)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,49 +20,54 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/chat")
-async def chat(request: Request):
-    try:
-        body = await request.json()
-        message = body.get("message", "")
-        grade = body.get("grade", "")
-        subject = body.get("subject", "")
-        hint_mode = body.get("hintMode", "default")
+# Modelo de entrada
+class SolveRequest(BaseModel):
+    question: str
+    grade: str
+    subject: str
 
-        # Primero intentamos detectar una skill
-        skill_key = detectSkill(message)
+# Modelo de salida
+class SolveResponse(BaseModel):
+    steps: List[Step]
 
-        if skill_key and skill_key in engine:
-            steps = engine[skill_key](message)
-            response_text = ""
-            for i, step in enumerate(steps, 1):
-                response_text += f"Paso {i}: {step.text}\n"
-                if hint_mode == "pictograms" and step.imageUrl:
-                    response_text += f"🖼️ {step.imageUrl}\n"
-            return {"text": response_text.strip()}
+# Ruta principal para resolver
+@app.post("/solve", response_model=SolveResponse)
+async def solve(req: SolveRequest):
+    skill = detectSkill(req.question)
 
-        # Si no hay skill, usamos GPT-4o
-        system_prompt = (
-            "Eres Tutorín, un asistente virtual para niños de primaria. "
-            "Explica de forma clara, paso a paso y con ejemplos fáciles. "
-            "Si hintMode es 'pictograms', añade imágenes (ARASAAC) si puedes. "
-            "Tu tono es cercano, claro y alegre."
-        )
+    if skill and skill in engine:
+        steps = engine[skill](req.question)
+        return {"steps": steps}
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Curso: {grade}\nAsignatura: {subject}\nPregunta: {message}"}
-        ]
+    # Si no se detecta skill, usamos el modelo de lenguaje con rol system
+    prompt = [
+        {
+            "role": "system",
+            "content": f"Eres un profesor paciente y visual que ayuda a estudiantes de primaria (nivel {req.grade}) en el área de {req.subject}. Divide la respuesta en pasos simples y claros. Si puedes, incluye pictogramas (usa URLs de ARASAAC si aplica). Usa un lenguaje sencillo.",
+        },
+        {
+            "role": "user",
+            "content": req.question,
+        },
+    ]
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=messages,
-            temperature=0.6,
-            max_tokens=800,
-        )
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=prompt,
+        temperature=0.7,
+    )
 
-        reply = response.choices[0].message.content
-        return {"text": reply}
+    # Extraer y dividir la respuesta en pasos
+    raw_answer = response['choices'][0]['message']['content']
+    step_lines = [line.strip() for line in raw_answer.split("\n") if line.strip()]
 
-    except Exception as e:
-        return {"error": str(e)}
+    steps: List[Step] = []
+    for line in step_lines:
+        # Puedes usar una expresión regular para detectar URLs de imágenes si se incluye alguna
+        if "http" in line:
+            parts = line.split("http")
+            steps.append(Step(text=parts[0].strip(), imageUrl="http" + parts[1].strip()))
+        else:
+            steps.append(Step(text=line))
+
+    return {"steps": steps}
