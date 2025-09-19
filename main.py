@@ -1,72 +1,84 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from openai import OpenAI
+from fastapi.middleware.cors import CORSMiddleware
 import os
-from dotenv import load_dotenv
 import json
+from dotenv import load_dotenv
 
-# 🔹 Cargar variables de entorno
+# Cargar variables de entorno
 load_dotenv()
 
-# 🔹 Inicializar FastAPI
+# Configurar FastAPI
 app = FastAPI()
 
-# 🔹 Cliente de OpenAI
+# Habilitar CORS (para que el frontend pueda llamar sin error)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ⚠️ en producción mejor restringir a tu dominio
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Cliente de OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# 🔹 Datos de entrada
+# ----- Modelos -----
+class ChatMessage(BaseModel):
+    role: str  # "Niño" | "Tutorin"
+    text: str
+
 class ChatRequest(BaseModel):
-    message: str  # lo que dice el niño
+    message: str
     grade: str = "5º"
     subject: str = "matemáticas"
 
-# 🔹 Datos de salida
-class Step(BaseModel):
-    problem: str
-    question: str
-    answer: str
-    hints: list[str]
+class CoachBlock(BaseModel):
+    type: str  # "Pregunta" | "Pista" | "Respuesta" | "Pista extra"
+    text: str
 
-class ChatResponse(BaseModel):
-    steps: list[Step]
+class CoachResponse(BaseModel):
+    blocks: list[CoachBlock]
 
-@app.post("/chat", response_model=ChatResponse)
+# ----- Endpoints -----
+@app.get("/")
+def root():
+    return {"message": "Tutorin API funcionando 🚀"}
+
+@app.post("/chat", response_model=CoachResponse)
 def chat(req: ChatRequest):
     """
-    Devuelve un plan paso a paso:
-    - problem: el enunciado reformulado
-    - question: la primera pregunta a resolver
-    - answer: la respuesta esperada en ese paso
-    - hints: lista de pistas progresivas
+    Genera bloques estructurados: Pregunta, Pista, Respuesta...
     """
     try:
         prompt = f"""
-        Eres Tutorin, un profesor virtual para niños de primaria.
-        El niño ha dicho: "{req.message}"
+        Eres Tutorin, un profesor virtual paciente y amable para niños de primaria.
+        El niño te ha dicho: "{req.message}".
         Tema: {req.subject}, nivel: {req.grade}.
 
-        Devuelve un JSON válido que contenga los pasos para resolver el problema.
+        Devuelve SOLO un JSON con este formato exacto:
 
-        Formato:
         {{
-          "steps": [
+          "blocks": [
             {{
-              "problem": "enunciado reformulado",
-              "question": "primera pregunta a resolver",
-              "answer": "respuesta esperada como texto corto",
-              "hints": [
-                "pista sencilla",
-                "pista más detallada",
-                "última pista revelando casi la respuesta"
-              ]
+              "type": "Pregunta",
+              "text": "Reformula el problema en forma de pregunta inicial"
+            }},
+            {{
+              "type": "Pista",
+              "text": "Primera pista sencilla"
+            }},
+            {{
+              "type": "Respuesta",
+              "text": "Respuesta final esperada, clara y corta"
+            }},
+            {{
+              "type": "Pista extra",
+              "text": "Consejo o explicación adicional para aprender mejor"
             }}
           ]
         }}
-
-        Importante:
-        - Solo devuelve JSON válido.
-        - Máximo 1 paso si el problema es simple.
-        - Siempre incluye al menos 2 pistas en "hints".
         """
 
         response = client.chat.completions.create(
@@ -76,27 +88,16 @@ def chat(req: ChatRequest):
         )
 
         raw = response.choices[0].message.content.strip()
+        print("🔎 RAW RESPONSE:", raw)
 
-        try:
-            data = json.loads(raw)
-        except Exception:
-            return {"steps": [
-                {
-                    "problem": req.message,
-                    "question": "Reformula tu problema.",
-                    "answer": "no sé",
-                    "hints": ["Intenta plantearlo de otra forma."]
-                }
-            ]}
-
+        # Intentar parsear JSON
+        data = json.loads(raw)
         return data
 
     except Exception as e:
-        return {"steps": [
-            {
-                "problem": req.message,
-                "question": "Ocurrió un error",
-                "answer": "error",
-                "hints": [str(e)]
-            }
-        ]}
+        return {
+            "blocks": [
+                {"type": "Pregunta", "text": "Ha ocurrido un error."},
+                {"type": "Pista", "text": str(e)},
+            ]
+        }
