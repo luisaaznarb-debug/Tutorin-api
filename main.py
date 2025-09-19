@@ -3,100 +3,114 @@ from pydantic import BaseModel
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import base64
+import requests
 
-# 🚀 Cargar variables desde .env
+# 🚀 Cargar variables de entorno
 load_dotenv()
 
-# Inicializar cliente OpenAI con la clave del entorno
+# Inicializar cliente OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Clave ElevenLabs
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "jw7ksPllnpL2oNWqa0Jl")  # 👈 voz fija que pediste
 
 app = FastAPI()
 
 
 # 📌 Modelos
 class ChatMessage(BaseModel):
-    role: str  # "Niño" | "Tutorin"
+    role: str   # "Niño" | "Tutorin"
     content: str
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     subject: str
     grade: str
-    maxHints: int | None = 3
 
-class CoachBlock(BaseModel):
-    type: str  # "Pregunta" | "Pista" | "Respuesta" | "Pista extra"
+class ChatResponse(BaseModel):
+    reply: str
+
+class TTSRequest(BaseModel):
     text: str
 
-class CoachResponse(BaseModel):
-    blocks: list[CoachBlock]
+class TTSResponse(BaseModel):
+    audio: str   # base64
 
 
-# 📌 Endpoint principal
-@app.post("/chat", response_model=CoachResponse)
+# 📌 Chat dinámico
+@app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """
-    Genera un ejercicio educativo paso a paso en español,
-    devolviendo bloques con etiquetas:
-    - Pregunta
-    - Pista
-    - Respuesta
-    - Pista extra
+    Tutorín dinámico: confirma problema, da pistas, corrige y avanza paso a paso.
     """
 
-    conversation = [
-        {
-            "role": "system",
-            "content": f"""
-Eres Tutorín, un tutor virtual para niños de primaria (grado {req.grade}).
-Materia: {req.subject}.
+    history = []
+    for m in req.messages:
+        if m.role == "Niño":
+            history.append({"role": "user", "content": m.content})
+        else:
+            history.append({"role": "assistant", "content": m.content})
 
-Tu tarea es devolver un problema paso a paso en formato JSON.
-Cada paso debe estar etiquetado como:
-- "Pregunta" (el enunciado principal)
-- "Pista" (una ayuda para resolver)
-- "Pista extra" (ayuda adicional si el niño no responde bien)
-- "Respuesta" (el resultado correcto al final)
+    system_instruction = f"""
+Eres Tutorín, un profesor virtual paciente para niños de primaria.
+Nivel: {req.grade}, asignatura: {req.subject}.
 
-Ejemplo de salida:
-{{
-  "blocks": [
-    {{"type": "Pregunta", "text": "¿Cuánto es 12 + 8?"}},
-    {{"type": "Pista", "text": "Intenta sumar primero las decenas"}},
-    {{"type": "Pista extra", "text": "12 + 8 = 20"}},
-    {{"type": "Respuesta", "text": "La respuesta es 20"}}
-  ]
-}}
-Devuelve solo JSON válido, sin explicaciones adicionales.
+Reglas:
+1. Si el niño plantea un problema, repítelo con tus palabras y da una primera pista.
+2. Cuando el niño responde:
+   - Si es correcto, avanza al siguiente paso de la resolución.
+   - Si es incorrecto o dice "no sé", da una pista adicional sobre el mismo paso (NO avances aún).
+3. No des toda la solución de golpe. Ve paso a paso.
+4. Usa frases cortas, claras, motivadoras y en español.
+5. Sé amable y anima al niño.
 """
-        },
-        {
-            "role": "user",
-            "content": f"Genera un problema de {req.subject} para un niño de {req.grade}."
-        },
-    ]
 
-    # 📌 Llamada a OpenAI
+    conversation = [{"role": "system", "content": system_instruction}] + history
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=conversation,
-        temperature=0.6,
+        temperature=0.7,
     )
 
-    raw_text = response.choices[0].message.content
+    reply = response.choices[0].message.content
+    return {"reply": reply}
 
-    import json
-    try:
-        data = json.loads(raw_text)
-    except Exception:
-        # fallback si el modelo no devuelve JSON válido
-        data = {
-            "blocks": [
-                {"type": "Pregunta", "text": "¿Cuánto es 5 + 3?"},
-                {"type": "Pista", "text": "Cuenta con los dedos"},
-                {"type": "Pista extra", "text": "5 + 3 = 8"},
-                {"type": "Respuesta", "text": "La respuesta es 8"}
-            ]
+
+# 📌 TTS con ElevenLabs
+@app.post("/tts", response_model=TTSResponse)
+async def tts(req: TTSRequest):
+    """
+    Convierte texto en voz usando ElevenLabs y devuelve el audio en base64.
+    """
+
+    if not ELEVENLABS_API_KEY:
+        return {"audio": "", "error": "Falta ELEVENLABS_API_KEY en variables de entorno"}
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+
+    headers = {
+        "xi-api-key": ELEVENLABS_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "text": req.text,
+        "voice_settings": {
+            "stability": 0.6,
+            "similarity_boost": 0.8
         }
+    }
 
-    return data
+    try:
+        resp = requests.post(url, headers=headers, json=payload)
+        resp.raise_for_status()
+
+        audio_bytes = resp.content
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+
+        return {"audio": audio_b64}
+    except Exception as e:
+        return {"audio": "", "error": str(e)}
