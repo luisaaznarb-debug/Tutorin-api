@@ -22,17 +22,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/chat")
 async def chat(payload: dict):
     messages = payload.get("messages", [])
-    subject = payload.get("subject", "matematicas")
+    subject = payload.get("subject", "matemáticas")
     grade = payload.get("grade", "primaria")
 
-    # 🔹 GPT genera respuesta
+    # 🔹 GPT genera respuesta con enfoque de pistas
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": f"Eres Tutorín, un profesor de {subject} para {grade}."},
+            {
+                "role": "system",
+                "content": f"""
+Eres Tutorín, un profesor de {subject} para {grade}.
+Tu misión es guiar al niño paso a paso:
+1. Siempre responde primero con una pista o una pregunta sencilla que ayude a razonar.
+2. Solo si el niño responde mal varias veces o pide la solución explícita, das la respuesta completa.
+3. Usa un tono motivador, claro y breve, como un profesor paciente.
+""",
+            },
             *messages,
         ],
     )
@@ -47,7 +57,10 @@ async def chat(payload: dict):
     tts_response = requests.post(
         f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
         headers=headers,
-        json={"text": reply_text, "voice_settings": {"stability": 0.4, "similarity_boost": 0.8}},
+        json={
+            "text": reply_text,
+            "voice_settings": {"stability": 0.4, "similarity_boost": 0.8},
+        },
     )
 
     audio_base64 = None
