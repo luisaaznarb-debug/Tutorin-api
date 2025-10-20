@@ -1,0 +1,113 @@
+{
+  "matematicas": {
+    "suma": [
+      "add_col",
+      "add_carry",
+      "add_resultado"
+    ],
+    "resta": [
+      "sub_col",
+      "sub_resta",
+      "sub_resultado"
+    ],
+    "multiplicacion": [
+      "mult_parcial",
+      "mult_total",
+      "mult_resultado"
+    ],
+    "division": [
+      "div_qdigit",
+      "div_resta",
+      "div_resultado"
+    ],
+    "fracciones": [
+      "frac_inicio",
+      "frac_mcm",
+      "frac_equiv",
+      "frac_operacion",
+      "frac_simplificar",
+      "frac_resultado"
+    ],
+    "decimales": [
+      "decimal_identificar",
+      "decimal_alinear",
+      "decimal_operar",
+      "decimal_resultado"
+    ],
+    "porcentajes": [
+      "percent_identificar",
+      "percent_transformar",
+      "percent_calculo",
+      "percent_resultado"
+    ],
+    "medidas": [
+      "measure_identificar",
+      "measure_convertir",
+      "measure_operar",
+      "measure_resultado"
+    ],
+    "geometria": [
+      "geo_identificar",
+      "geo_formula",
+      "geo_sustituir",
+      "geo_resultado"
+    ],
+    "graficos_probabilidad": [
+      "data_leer",
+      "data_interpretar",
+      "data_comparar",
+      "data_resultado",
+      "prob_evento",
+      "prob_caso",
+      "prob_resultado"
+    ],
+    "problemas": [
+      "prob_comprension",
+      "prob_operacion",
+      "prob_calculo",
+      "prob_comprobacion",
+      "prob_resultado"
+    ]
+  },
+  "lengua": {
+    "gramatica": [
+      "grammar_sujeto",
+      "grammar_predicado",
+      "grammar_verbo"
+    ],
+    "ortografia": [
+      "spelling_tilde",
+      "spelling_regla",
+      "spelling_excepcion"
+    ],
+    "vocabulario": [
+      "vocab_sinonimo",
+      "vocab_antonimo",
+      "vocab_definicion"
+    ]
+  },
+  "ciencias": {
+    "naturales": [
+      "sci_fuerza",
+      "sci_materia",
+      "sci_ecosistema"
+    ],
+    "fisica": [
+      "phy_velocidad",
+      "phy_energia",
+      "phy_tiempo"
+    ]
+  },
+  "valores": {
+    "emociones": [
+      "emo_identificar",
+      "emo_expresar",
+      "emo_regular"
+    ],
+    "convivencia": [
+      "val_respeto",
+      "val_empatia",
+      "val_colaboracion"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+fastapi==0.110.0
+uvicorn==0.30.0
+pydantic==1.10.13
+python-dotenv==1.0.1
+openai==1.40.0
+sqlalchemy==2.0.30
+requests==2.32.3
+
+# Necesarios para /api/analyze_prompt:
+python-multipart==0.0.9   # formularios y UploadFile (audio)
+gTTS==2.5.1               # texto -> voz (MP3) para la respuesta de Tutorin

@@ -1,0 +1,47 @@
+# ==========================
+# Gitignore para Python + IA (Tutorin)
+# ==========================
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Entorno virtual
+.venv/
+venv/
+env/
+ENV/
+
+# Variables de entorno (seguridad)
+.env
+.env.*
+dotenv/
+dotenv/*
+*.env
+
+# Configuración de IDEs y editores
+.vscode/
+.idea/
+.DS_Store
+
+# Cachés y pruebas
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Archivos temporales o binarios
+*.db
+*.sqlite3
+*.log
+
+# Archivos de despliegue o dependencias
+node_modules/
+dist/
+build/
+
+# Archivos del sistema
+Thumbs.db
+desktop.ini
