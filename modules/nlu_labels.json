@@ -6,9 +6,7 @@
       "multiplicar", "multiplicación", "x", "×", "*", "por",
       "dividir", "división", ":", "÷", "/",
       "fracción", "fracciones", "numerador", "denominador", "mcm",
-      "decimal", "decimales", "coma decimal", "número decimal",
-      "sumar decimales", "restar decimales", "multiplicar decimales",
-      "dividir decimales", "décimas", "centésimas", "milésimas"
+      "decimal", "decimales", "coma decimal", "número decimal"
     ],
     "engines": {
       "suma": "addition_engine",
@@ -16,70 +14,12 @@
       "multiplicacion": "multiplication_engine",
       "division": "division_engine",
       "fracciones": "fractions_engine",
-      "decimales": "decimals_engine"
-    }
-  },
-  "lengua": {
-    "palabras_clave": [
-      "sujeto", "predicado", "verbo", "nombre", "adjetivo",
-      "sustantivo", "determinante", "género", "número",
-      "frase", "oración", "sinónimo", "antónimo", "tilde",
-      "acentuación", "palabra aguda", "grave", "esdrújula",
-      "vocal", "consonante", "sílaba", "diptongo", "hiato"
-    ],
-    "engines": {
-      "gramatica": "grammar_engine",
-      "acentuacion": "accent_engine",
-      "vocabulario": "vocabulary_engine",
-      "ortografia": "spelling_engine"
-    }
-  },
-  "efi": {
-    "palabras_clave": [
-      "salud", "ejercicio", "alimentación", "higiene",
-      "deporte", "entrenamiento", "fuerza", "resistencia",
-      "velocidad", "coordinación", "flexibilidad", "postura",
-      "actividad física", "educación física"
-    ],
-    "engines": {
-      "habitos": "health_engine",
-      "deporte": "sport_engine"
-    }
-  },
-  "ciencias": {
-    "palabras_clave": [
-      "planeta", "tierra", "atmósfera", "agua", "ecosistema",
-      "animales", "plantas", "materia", "energía",
-      "ciclo del agua", "fuerza", "movimiento", "velocidad",
-      "estado sólido", "líquido", "gaseoso", "mezcla",
-      "reacción", "material", "conductividad"
-    ],
-    "engines": {
-      "naturales": "science_engine",
-      "fuerzas": "physics_engine",
-      "energia": "energy_engine"
-    }
-  },
-  "ingles": {
-    "palabras_clave": [
-      "english", "inglés", "verb", "to be", "present simple",
-      "past", "future", "grammar", "translate", "meaning",
-      "sentence", "word", "question", "answer"
-    ],
-    "engines": {
-      "vocabulary": "english_vocab_engine",
-      "grammar": "english_grammar_engine"
-    }
-  },
-  "valores": {
-    "palabras_clave": [
-      "amistad", "respeto", "solidaridad", "empatía",
-      "cooperación", "responsabilidad", "honestidad",
-      "igualdad", "tolerancia", "justicia", "esfuerzo"
-    ],
-    "engines": {
-      "convivencia": "values_engine",
-      "emociones": "emotions_engine"
+      "decimales": "decimals_engine",
+      "geometria": "geometry_engine",
+      "medidas": "measures_engine",
+      "porcentajes": "percentages_engine",
+      "estadistica": "statistics_engine",
+      "problemas": "problem_solving_engine"
     }
   }
 }

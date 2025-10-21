@@ -3,21 +3,16 @@
 app.py
 ----------------------------------
 App Factory principal de Tutorín.
-- Crea la aplicación FastAPI
-- Monta routers de análisis y resolución
-- Configura CORS para frontend local o remoto
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Routers principales
 from routes.analyze_prompt import router as analyze_router
 from routes.solve import router as solve_router
 
-# -------------------------------------------------------
-# CREAR APP
-# -------------------------------------------------------
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Tutorín API",
@@ -25,7 +20,7 @@ def create_app() -> FastAPI:
         version="1.0.0"
     )
 
-    # CORS (permite llamadas desde frontend local y remoto)
+    # CORS
     origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -40,13 +35,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ---------------------------------------------------
-    # RUTAS PRINCIPALES
-    # ---------------------------------------------------
+    # ✅ AÑADIR: Middleware para asegurar UTF-8 en todas las respuestas
+    @app.middleware("http")
+    async def add_charset_to_content_type(request, call_next):
+        response = await call_next(request)
+        if "application/json" in response.headers.get("content-type", ""):
+            response.headers["content-type"] = "application/json; charset=utf-8"
+        return response
+
+    # Rutas principales
     app.include_router(analyze_router, prefix="/analyze", tags=["Analyze"])
     app.include_router(solve_router, prefix="/solve", tags=["Solve"])
 
-    # Ruta raíz simple (útil para probar que el backend responde)
     @app.get("/")
     def root():
         return {
@@ -57,8 +57,4 @@ def create_app() -> FastAPI:
 
     return app
 
-
-# -------------------------------------------------------
-# EJECUCIÓN DIRECTA
-# -------------------------------------------------------
 app = create_app()

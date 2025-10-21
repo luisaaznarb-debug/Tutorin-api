@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ai_router.py
-Sistema de pistas para Tutorin:
+Sistema de pistas para Tutorín:
 - Usa pistas internas por tipo de operación (suma, fracción, decimales, etc.)
 - Si no hay pista definida, genera una con IA.
 """
@@ -13,18 +13,25 @@ from importlib import import_module
 # === Importar validador de hint_types ===
 from logic.core.hint_validator import is_valid_hint
 
-# === Importar pistas internas ===
-from .hints_addition import _sum_col_hint
-from .hints_subtraction import _sub_col_hint
-from .hints_multiplication import _mult_parcial_hint
-from .hints_division import _division_hint
+# === Importar funciones públicas de pistas ===
+from .hints_addition import get_hint as get_addition_hint
+from .hints_subtraction import get_hint as get_subtraction_hint
+from .hints_multiplication import get_hint as get_multiplication_hint
+from .hints_division import get_hint as get_division_hint
 from .hints_fractions import (
     _frac_inicio_hint,
     _frac_mcm_hint,
     _frac_equiv_hint,
     _frac_operacion_hint,
     _frac_simplificar_hint,
+    get_hint as get_fractions_hint
 )
+from .hints_decimals import get_hint as get_decimals_hint
+from .hints_geometry import get_hint as get_geometry_hint
+from .hints_measures import get_hint as get_measures_hint
+from .hints_percentages import get_hint as get_percentages_hint
+from .hints_statistics import get_hint as get_statistics_hint
+from .hints_problems import get_hint as get_problems_hint
 
 # === IA opcional ===
 try:
@@ -58,7 +65,7 @@ def _generate_ai_hint(prompt: str, step: str, error_count: int, context: str = "
 
     try:
         sys_msg = (
-            "Eres Tutorin, un profesor de Primaria en España. "
+            "Eres Tutorín, un profesor de Primaria en España. "
             "Da una pista breve, concreta y motivadora para ayudar al alumno "
             "a avanzar en su razonamiento sin resolverle todo."
         )
@@ -105,25 +112,25 @@ def generate_hint_with_ai(
 
     # --- Suma ---
     if t == "suma":
-        hint = _sum_col_hint(ctx, e, c)
+        hint = get_addition_hint("add_col", e, ctx, answer)
         _validate_hint_type(t, "add_col")
         return hint
 
     # --- Resta ---
     if t == "resta":
-        hint = _sub_col_hint(ctx, e, c)
+        hint = get_subtraction_hint("sub_col", e, ctx, answer)
         _validate_hint_type(t, "sub_col")
         return hint
 
     # --- Multiplicación ---
     if t == "multiplicacion":
-        hint = _mult_parcial_hint(ctx, e, c)
+        hint = get_multiplication_hint("mult_parcial", e, ctx, answer)
         _validate_hint_type(t, "mult_parcial")
         return hint
 
     # --- División ---
     if t == "division":
-        hint = _division_hint(ctx, e, c)
+        hint = get_division_hint("div_qdigit", e, ctx, answer)
         _validate_hint_type(t, "div_qdigit")
         return hint
 
@@ -148,15 +155,39 @@ def generate_hint_with_ai(
 
     # --- Decimales ---
     if t == "decimales":
-        try:
-            from .hints_decimals import get_hint as _decimal_hint
-            hint = _decimal_hint(step, e)
-            _validate_hint_type(t, step)
-            return hint
-        except ModuleNotFoundError:
-            pass
-        except Exception as ex:
-            print(f"[AI_ROUTER] Error al importar hints_decimals:", ex)
+        hint = get_decimals_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
+
+    # --- Geometría ---
+    if t == "geometria":
+        hint = get_geometry_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
+
+    # --- Medidas ---
+    if t == "medidas":
+        hint = get_measures_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
+
+    # --- Porcentajes ---
+    if t == "porcentajes":
+        hint = get_percentages_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
+
+    # --- Estadística ---
+    if t in ("estadistica", "estadística", "probabilidad"):
+        hint = get_statistics_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
+
+    # --- Problemas ---
+    if t == "problemas":
+        hint = get_problems_hint(step, e)
+        _validate_hint_type(t, step)
+        return hint
 
     # --- Carga dinámica genérica ---
     try:

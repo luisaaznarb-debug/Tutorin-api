@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+fractions_engine.py
+Motor de fracciones con avance de pasos CORREGIDO
+"""
+
 from fractions import Fraction
 import re
 from logic.ai_hints.ai_router import generate_hint_with_ai
@@ -23,6 +28,11 @@ def _pretty_frac(fr: Fraction) -> str:
     return f"<div style='display:inline-block;text-align:center;'><div>{fr.numerator}</div><hr style='margin:2px 0;' /><div>{fr.denominator}</div></div>"
 
 
+def _canon(s: str) -> str:
+    """Normaliza texto para comparación."""
+    return str(s or "").strip().lower().replace(" ", "")
+
+
 # ──────────────────────────────────────────────
 # Motor principal
 # ──────────────────────────────────────────────
@@ -39,13 +49,20 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             f"👉 Observa las fracciones: {_pretty_frac(f1)} y {_pretty_frac(f2)}.<br/>"
             f"¿Tienen el mismo denominador (<b>{f1.denominator}</b> y <b>{f2.denominator}</b>)?"
         )
+        
+        # ✅ Determinar la respuesta correcta
+        if f1.denominator == f2.denominator:
+            expected = "sí"
+        else:
+            expected = "no"
+        
         return {
             "status": "ask",
             "message": msg,
-            "expected_answer": "no",
+            "expected_answer": expected,
             "topic": "fracciones",
             "hint_type": "frac_intro",
-            "next_step": step_now + 1  # ✅ avance
+            "next_step": 1  # ✅ IMPORTANTE: siguiente paso es 1
         }
 
     # Paso 1 → calcular denominador común
@@ -61,7 +78,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": str(common_den),
             "topic": "fracciones",
             "hint_type": "frac_den",
-            "next_step": step_now + 1
+            "next_step": 2  # ✅ Siguiente paso
         }
 
     # Paso 2 → ajustar numeradores
@@ -73,13 +90,22 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             f"{f1.numerator}×{f2.denominator} = <b>{n1}</b> y "
             f"{f2.numerator}×{f1.denominator} = <b>{n2}</b>."
         )
+        
+        # Aceptar varias formas de respuesta
+        expected_variants = [
+            f"{n1} y {n2}",
+            f"{n1}y{n2}",
+            f"{n1},{n2}",
+            f"{n1} {n2}"
+        ]
+        
         return {
             "status": "ask",
             "message": msg,
             "expected_answer": f"{n1} y {n2}",
             "topic": "fracciones",
             "hint_type": "frac_num",
-            "next_step": step_now + 1
+            "next_step": 3  # ✅ Siguiente paso
         }
 
     # Paso 3 → suma de numeradores
@@ -99,7 +125,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": f"{suma}/{den}",
             "topic": "fracciones",
             "hint_type": "frac_sum",
-            "next_step": step_now + 1
+            "next_step": 4  # ✅ Siguiente paso
         }
 
     # Paso 4 → simplificar resultado y cierre
@@ -111,12 +137,12 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             f"(<b>{result}</b> en número mixto si corresponde)."
         )
         return {
-            "status": "done",  # ✅ marca fin
+            "status": "done",  # ✅ Marca fin
             "message": msg,
             "expected_answer": str(result),
             "topic": "fracciones",
             "hint_type": "frac_result",
-            "next_step": step_now + 1  # ✅ avanza para cierre limpio
+            "next_step": 5  # ✅ Paso final
         }
 
     # Seguridad: si se pasa de pasos

@@ -9,3 +9,7 @@ requests==2.32.3
 # Necesarios para /api/analyze_prompt:
 python-multipart==0.0.9   # formularios y UploadFile (audio)
 gTTS==2.5.1               # texto -> voz (MP3) para la respuesta de Tutorin
+
+# ✅ NUEVAS DEPENDENCIAS (mejoras de seguridad)
+slowapi==0.1.9            # Rate limiting
+psycopg2-binary==2.9.9    # PostgreSQL (opcional, para Railway)

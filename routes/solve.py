@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 routes/solve.py
-Endpoint principal de Tutorín.
-Totalmente sincronizado con tus motores:
-- No añade ni modifica mensajes.
-- Solo gestiona flujo, persistencia y errores.
+Endpoint principal de Tutorín - CORREGIDO para mostrar siguiente paso automáticamente
 """
 
 from typing import Optional
@@ -19,26 +16,18 @@ from db import get_progress, upsert_progress, save_history
 
 router = APIRouter()
 
-# -------------------------------------------------------
-# MODELO DE PETICIÓN
-# -------------------------------------------------------
 class SolveRequest(BaseModel):
     user_id: Optional[str] = None
     question: str
     last_answer: Optional[str] = ""
     exercise_id: Optional[str] = None
     context: Optional[str] = ""
-    cycle: Optional[str] = "c2"  # c1, c2, c3
+    cycle: Optional[str] = "c2"
 
-# -------------------------------------------------------
-# HELPERS
-# -------------------------------------------------------
 def _canon(s: str) -> str:
+    """Normaliza texto para comparación"""
     return str(s or "").replace(" ", "").replace(",", ".").lower()
 
-# -------------------------------------------------------
-# ENDPOINT PRINCIPAL
-# -------------------------------------------------------
 @router.post("/")
 def solve(req: SolveRequest):
     """Orquestador principal: gestiona paso actual, errores y motores."""
@@ -53,9 +42,11 @@ def solve(req: SolveRequest):
     topic = nlu.get("intent") or "general"
 
     # ---------------------------------------------------
-    # 1️⃣ CASO "NO SÉ" → PISTA (internas o IA)
+    # 1️⃣ CASO "NO SÉ" → PISTA
     # ---------------------------------------------------
     if is_unknown_answer(req.last_answer or ""):
+        error_count = min(9, error_count + 1)
+        
         ai_hint = generate_hint_with_ai(
             topic,
             f"hint_{step_now}",
@@ -66,10 +57,12 @@ def solve(req: SolveRequest):
         )
         msg = ai_hint or "🧠 Pista: piensa paso a paso y revisa los números."
         new_ctx = (prev_ctx + "\n" + msg).strip()
+        
         upsert_progress(exercise_id, step_now, error_count, new_ctx, user_id=req.user_id)
         save_history(
             req.user_id, exercise_id, req.question, req.last_answer, msg, step_now, error_count
         )
+        
         return {
             "exercise_id": exercise_id,
             "status": "hint",
@@ -82,7 +75,7 @@ def solve(req: SolveRequest):
         }
 
     # ---------------------------------------------------
-    # 2️⃣ LLAMAR AL MOTOR CORRESPONDIENTE
+    # 2️⃣ LLAMAR AL MOTOR
     # ---------------------------------------------------
     det = run_engine_for(
         engine,
@@ -92,26 +85,31 @@ def solve(req: SolveRequest):
         errors=error_count,
     )
 
-    # Los motores definen todo: message, status, expected_answer, next_step
+    if not det:
+        return {
+            "exercise_id": exercise_id,
+            "status": "error",
+            "message": "No pude procesar este ejercicio.",
+            "nlu": nlu,
+        }
+
     message = det.get("message", "")
     expected = det.get("expected_answer")
     status = det.get("status", "ask")
     next_step = int(det.get("next_step", step_now))
-    step_tag = det.get("step_tag", "")
-
-    # Guardar historial
-    save_history(
-        req.user_id, exercise_id, req.question, req.last_answer, message, step_now, error_count
-    )
 
     # ---------------------------------------------------
-    # 3️⃣ RESPUESTAS
+    # 3️⃣ CASOS DE RESPUESTA
     # ---------------------------------------------------
 
-    # 3a. Primera vez de este paso (no hay respuesta todavía)
-    if expected and _canon(req.last_answer) == "":
+    # 3a. Primera vez en este paso (sin respuesta todavía)
+    if _canon(req.last_answer) == "":
         new_ctx = (prev_ctx + "\n" + message).strip()
         upsert_progress(exercise_id, step_now, error_count, new_ctx, user_id=req.user_id)
+        save_history(
+            req.user_id, exercise_id, req.question, req.last_answer, message, step_now, error_count
+        )
+        
         return {
             "exercise_id": exercise_id,
             "status": status,
@@ -123,15 +121,50 @@ def solve(req: SolveRequest):
             "nlu": nlu,
         }
 
-    # 3b. Respuesta incorrecta → se mantiene el paso
-    if expected and _canon(req.last_answer) != _canon(expected):
-        error_count = min(9, (error_count or 0) + 1)
-        feedback = f"❌ No es exactamente.\n{message}"
+    # 3b. HAY respuesta del usuario → verificar
+    
+    # Si no hay expected_answer, solo mostrar mensaje del motor
+    if not expected:
+        new_ctx = (prev_ctx + "\n" + message).strip()
+        upsert_progress(exercise_id, next_step, 0, new_ctx, user_id=req.user_id)
+        save_history(
+            req.user_id, exercise_id, req.question, req.last_answer, message, next_step, 0
+        )
+        
+        return {
+            "exercise_id": exercise_id,
+            "status": status,
+            "step": next_step,
+            "error_count": 0,
+            "message": message,
+            "expected_answer": None,
+            "context": new_ctx,
+            "nlu": nlu,
+        }
+
+    # 3c. Respuesta INCORRECTA → incrementar errores, mantener paso
+    if _canon(req.last_answer) != _canon(expected):
+        error_count = min(9, error_count + 1)
+        
+        # Generar pista con el nuevo nivel de error
+        ai_hint = generate_hint_with_ai(
+            topic,
+            f"hint_{step_now}",
+            req.question,
+            answer=req.last_answer or "",
+            error_count=error_count,
+            cycle=req.cycle,
+        )
+        
+        feedback = f"❌ No es exactamente. {ai_hint if ai_hint else 'Revisa e intenta de nuevo.'}"
         new_ctx = (prev_ctx + "\n" + feedback).strip()
+        
+        # MANTENER el mismo paso, incrementar errores
         upsert_progress(exercise_id, step_now, error_count, new_ctx, user_id=req.user_id)
         save_history(
             req.user_id, exercise_id, req.question, req.last_answer, feedback, step_now, error_count
         )
+        
         return {
             "exercise_id": exercise_id,
             "status": "feedback",
@@ -143,33 +176,61 @@ def solve(req: SolveRequest):
             "nlu": nlu,
         }
 
-    # 3c. Respuesta correcta → avanzar al siguiente paso
-    if expected and _canon(req.last_answer) == _canon(expected):
-        new_ctx = (prev_ctx + "\n" + message).strip()
-        upsert_progress(exercise_id, next_step, 0, new_ctx, user_id=req.user_id)
+    # 3d. Respuesta CORRECTA → avanzar y mostrar siguiente paso
+    if _canon(req.last_answer) == _canon(expected):
+        success_msg = "✅ ¡Correcto! 👍"
+        
+        # AVANZAR al siguiente paso y RESETEAR errores
+        upsert_progress(exercise_id, next_step, 0, prev_ctx, user_id=req.user_id)
         save_history(
-            req.user_id, exercise_id, req.question, req.last_answer, message, next_step, 0
+            req.user_id, exercise_id, req.question, req.last_answer, success_msg, next_step, 0
         )
-        return {
-            "exercise_id": exercise_id,
-            "status": status,
-            "step": next_step,
-            "error_count": 0,
-            "message": message,
-            "expected_answer": expected,
-            "context": new_ctx,
-            "nlu": nlu,
-        }
-
-    # 3d. Caso general sin expected (mensaje libre del motor)
-    new_ctx = (prev_ctx + "\n" + message).strip()
-    upsert_progress(exercise_id, step_now, error_count, new_ctx, user_id=req.user_id)
-    return {
-        "exercise_id": exercise_id,
-        "status": status,
-        "step": step_now,
-        "error_count": error_count,
-        "message": message,
-        "context": new_ctx,
-        "nlu": nlu,
-    }
+        
+        # ✅ OBTENER INMEDIATAMENTE LA PREGUNTA DEL SIGUIENTE PASO
+        next_det = run_engine_for(
+            engine,
+            prompt=req.question,
+            step=next_step,
+            answer="",
+            errors=0,
+        )
+        
+        if next_det:
+            next_message = next_det.get("message", "")
+            next_expected = next_det.get("expected_answer")
+            next_status = next_det.get("status", "ask")
+            
+            # Combinar mensaje de éxito + pregunta siguiente
+            combined_message = f"{success_msg}\n\n{next_message}"
+            new_ctx = (prev_ctx + "\n" + combined_message).strip()
+            
+            # Actualizar contexto
+            upsert_progress(exercise_id, next_step, 0, new_ctx, user_id=req.user_id)
+            
+            return {
+                "exercise_id": exercise_id,
+                "status": next_status,
+                "step": next_step,
+                "error_count": 0,
+                "message": combined_message,
+                "expected_answer": next_expected,
+                "context": new_ctx,
+                "nlu": nlu,
+            }
+        else:
+            # Ejercicio completado
+            final_message = f"{success_msg}\n\n🎉 ¡Ejercicio completado!"
+            new_ctx = (prev_ctx + "\n" + final_message).strip()
+            
+            upsert_progress(exercise_id, next_step, 0, new_ctx, user_id=req.user_id)
+            
+            return {
+                "exercise_id": exercise_id,
+                "status": "done",
+                "step": next_step,
+                "error_count": 0,
+                "message": final_message,
+                "expected_answer": None,
+                "context": new_ctx,
+                "nlu": nlu,
+            }

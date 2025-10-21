@@ -1,10 +1,18 @@
-from .hints_utils import _extract_pre_block, _lcm, _question
-import re, math
+# -*- coding: utf-8 -*-
+"""
+hints_fractions.py
+Pistas progresivas para fracciones según nivel de error.
+Compatible con fractions_engine.py
+"""
 
-# ──────────────────────────────────────────────────────────────
-# AUX: leer dos fracciones A/B (op) C/D desde el contexto
-# ──────────────────────────────────────────────────────────────
+from .hints_utils import _extract_pre_block, _lcm, _question
+import re
+import math
+from typing import Optional, Tuple
+
+# ────────── Utilidades ──────────
 def _parse_two_fractions(ctx: str):
+    """Lee dos fracciones A/B (op) C/D desde el contexto."""
     text = ctx or ""
 
     # Marcador oculto
@@ -28,102 +36,166 @@ def _parse_two_fractions(ctx: str):
 
     return None
 
-# ──────────────────────────────────────────────────────────────
-# 0️⃣ INICIO (sí/no)
-# ──────────────────────────────────────────────────────────────
+# ────────── Pistas por subpaso ──────────
+
 def _frac_inicio_hint(context: str, err: int, cycle: str) -> str:
+    """Pistas para comparar denominadores (sí/no)."""
     pf = _parse_two_fractions(context)
     if pf:
-        (a,b),(c,d),_ = pf
+        (a, b), (c, d), _ = pf
         correcta = "sí" if b == d else "no"
     else:
         b, d, correcta = 3, 5, "no"
 
     if err == 1:
-        return "👉 Fíjate bien: el <b>denominador</b> es el número de <b>abajo</b> en cada fracción. " + _question("¿Son iguales?")
-    elif err == 2:
-        return f"🧮 Mira sólo los de abajo: {b} y {d}. " + _question("¿Coinciden?")
-    elif err == 3:
-        return f"📘 Denominadores vistos: {b} y {d}. Si son iguales, responde 'sí'; si no, responde 'no'."
-    else:
+        return (
+            "👉 Fíjate bien: el <b>denominador</b> es el número de <b>abajo</b> en cada fracción. "
+            + _question("¿Son iguales?")
+        )
+    
+    if err == 2:
+        return (
+            f"🧮 Mira solo los números de abajo: <b>{b}</b> y <b>{d}</b>. "
+            + _question("¿Coinciden exactamente?")
+        )
+    
+    if err == 3:
+        return (
+            f"💡 Denominadores: {b} y {d}. "
+            "Si son iguales, responde 'sí'; si no, responde 'no'. "
+            "No te confundas con los numeradores (los de arriba)."
+        )
+    
+    if err >= 4:
         return f"✅ Respuesta correcta: <b>{correcta}</b>."
+    
+    return "Compara solo los denominadores."
 
-# ──────────────────────────────────────────────────────────────
-# 1️⃣ MCM
-# ──────────────────────────────────────────────────────────────
 def _frac_mcm_hint(context: str, err: int, cycle: str) -> str:
+    """Pistas para calcular el m.c.m."""
     pf = _parse_two_fractions(context)
     if pf:
-        (a,b),(c,d),_ = pf
+        (a, b), (c, d), _ = pf
     else:
         b, d = 3, 5
+    
     m = _lcm(b, d)
+    
     if err == 1:
-        return f"👉 El m.c.m. es el primer múltiplo común de {b} y {d}. " + _question("¿Cuál te sale?")
-    elif err == 2:
-        return f"🧮 Escribe los múltiplos de {b} y {d} y encuentra el primero común. " + _question("¿Cuál coincide?")
-    elif err == 3:
-        multiples_b = ', '.join(str(b*i) for i in range(1,7))
-        multiples_d = ', '.join(str(d*i) for i in range(1,7))
-        return f"📘 Múltiplos de {b}: {multiples_b}\nMúltiplos de {d}: {multiples_d}\n" + _question("¿Cuál es el primer número que coincide?")
-    else:
-        return f"✅ El m.c.m.({b},{d}) = <b>{m}</b>."
+        return (
+            f"👉 El m.c.m. es el <b>primer múltiplo común</b> de {b} y {d}. "
+            "Haz dos listas de múltiplos hasta encontrar el primero que se repite. "
+            + _question("¿Cuál te sale?")
+        )
+    
+    if err == 2:
+        return (
+            f"🧮 Escribe los múltiplos de <b>{b}</b>: {b}, {b*2}, {b*3}, {b*4}, {b*5}...\n"
+            f"Escribe los múltiplos de <b>{d}</b>: {d}, {d*2}, {d*3}, {d*4}, {d*5}...\n"
+            + _question("¿Cuál es el primer número que coincide?")
+        )
+    
+    if err == 3:
+        multiples_b = ', '.join(str(b*i) for i in range(1, 7))
+        multiples_d = ', '.join(str(d*i) for i in range(1, 7))
+        return (
+            f"💡 Múltiplos de {b}: {multiples_b}\n"
+            f"Múltiplos de {d}: {multiples_d}\n"
+            f"El primer número que aparece en ambas listas es <b>{m}</b>."
+        )
+    
+    if err >= 4:
+        return f"✅ El m.c.m.({b},{d}) = <b>{m}</b>. Úsalo como denominador común."
+    
+    return "Busca el primer múltiplo común de ambos denominadores."
 
-# ──────────────────────────────────────────────────────────────
-# 2️⃣ FRACCIONES EQUIVALENTES
-# ──────────────────────────────────────────────────────────────
 def _frac_equiv_hint(context: str, err: int, cycle: str) -> str:
+    """Pistas para calcular fracciones equivalentes."""
     pf = _parse_two_fractions(context)
     if not pf:
-        return "👉 Convierte ambas fracciones al mismo denominador."
-    (a,b),(c,d),_ = pf
+        return "👉 Convierte ambas fracciones al mismo denominador usando el m.c.m."
+    
+    (a, b), (c, d), _ = pf
     m = _lcm(b, d)
     kb, kd = (m // b), (m // d)
     A, C = a * kb, c * kd
 
     if err == 1:
-        return (f"👉 Tienes que multiplicar el <b>numerador</b> por el <b>mismo número</b> "
-                f"que has multiplicado el denominador para obtener {m}. "
-                f"¿Qué números obtienes? Dímelos separados por 'y' (ej.: {A} y {C}).")
-    elif err == 2:
-        return (f"🧮 En la primera fracción has multiplicado el denominador por <b>{kb}</b>, "
-                f"y en la segunda por <b>{kd}</b>. "
-                f"Multiplica el numerador por la misma cifra en cada fracción. "
-                f"¿Qué números te salen? Dímelos separados por 'y' (ej.: {A} y {C}).")
-    elif err == 3:
-        return (f"📘 Así queda: {a}/{b} → ({a}×{kb})/({b}×{kb}) = <b>{A}/{m}</b>, "
-                f"y {c}/{d} → ({c}×{kd})/({d}×{kd}) = <b>{C}/{m}</b>. "
-                f"¿Qué numeradores obtienes?")
-    else:
-        return (f"✅ Perfecto. Fracciones equivalentes: <b>{A}/{m}</b> y <b>{C}/{m}</b>. "
-                f"(Numeradores nuevos: <b>{A} y {C}</b>)")
+        return (
+            f"👉 Multiplica el <b>numerador</b> por el mismo número que multiplicaste "
+            f"el denominador para llegar a {m}. "
+            + _question(f"¿Qué numeradores obtienes? (responde: {A} y {C})")
+        )
+    
+    if err == 2:
+        return (
+            f"🧮 En la primera fracción, multiplicaste el denominador por <b>{kb}</b> "
+            f"(porque {b} × {kb} = {m}). "
+            f"Ahora multiplica el numerador {a} por ese mismo <b>{kb}</b>.\n"
+            f"En la segunda fracción, multiplica {c} por <b>{kd}</b>. "
+            + _question("¿Qué numeradores te salen?")
+        )
+    
+    if err == 3:
+        return (
+            f"💡 Así queda:\n"
+            f"{a}/{b} → ({a}×{kb})/({b}×{kb}) = <b>{A}/{m}</b>\n"
+            f"{c}/{d} → ({c}×{kd})/({d}×{kd}) = <b>{C}/{m}</b>\n"
+            + _question("¿Qué numeradores obtienes?")
+        )
+    
+    if err >= 4:
+        return (
+            f"✅ Perfecto. Fracciones equivalentes:\n"
+            f"<b>{A}/{m}</b> y <b>{C}/{m}</b>\n"
+            f"(Numeradores nuevos: <b>{A} y {C}</b>)"
+        )
+    
+    return "Multiplica cada numerador por el factor correspondiente."
 
-# ──────────────────────────────────────────────────────────────
-# 3️⃣ OPERACIÓN
-# ──────────────────────────────────────────────────────────────
 def _frac_operacion_hint(context: str, err: int, cycle: str) -> str:
+    """Pistas para operar los numeradores."""
     pf = _parse_two_fractions(context)
     if not pf:
         return "👉 Opera los numeradores y conserva el denominador común."
-    (a,b),(c,d),op = pf
+    
+    (a, b), (c, d), op = pf
     m = _lcm(b, d)
-    kb, kd = m//b, m//d
-    a2, c2 = a*kb, c*kd
+    kb, kd = m // b, m // d
+    a2, c2 = a * kb, c * kd
     num = a2 + c2 if op == "+" else a2 - c2
 
     if err == 1:
-        return f"👉 Ya tienen denominador común ({m}). Opera <b>sólo</b> los numeradores: {a2} {op} {c2}. " + _question("¿Qué obtienes?")
-    elif err == 2:
-        return f"🧮 El denominador queda igual ({m}). Calcula: {a2} {op} {c2}. " + _question("¿Cuál es el numerador resultante?")
-    elif err == 3:
-        return f"📘 {a2}{op}{c2} = <b>{num}</b>. Resultado parcial: <b>{num}/{m}</b>."
-    else:
-        return f"✅ {a}/{b} {op} {c}/{d} = <b>{num}/{m}</b> (sin simplificar)."
+        return (
+            f"👉 Ya tienen denominador común ({m}). "
+            f"Opera <b>solo los numeradores</b>: {a2} {op} {c2}. "
+            + _question("¿Qué obtienes?")
+        )
+    
+    if err == 2:
+        return (
+            f"🧮 El denominador queda igual (<b>{m}</b>). "
+            f"Calcula: {a2} {op} {c2}. "
+            + _question("¿Cuál es el numerador resultante?")
+        )
+    
+    if err == 3:
+        return (
+            f"💡 Operación paso a paso:\n"
+            f"{a2} {op} {c2} = <b>{num}</b>\n"
+            f"Resultado parcial: <b>{num}/{m}</b> (sin simplificar todavía)."
+        )
+    
+    if err >= 4:
+        return (
+            f"✅ Resultado de la operación:\n"
+            f"{a}/{b} {op} {c}/{d} = <b>{num}/{m}</b> (sin simplificar)."
+        )
+    
+    return "Opera solo los numeradores, el denominador no cambia."
 
-# ──────────────────────────────────────────────────────────────
-# 4️⃣ SIMPLIFICAR
-# ──────────────────────────────────────────────────────────────
 def _frac_simplificar_hint(context: str, err: int, cycle: str) -> str:
+    """Pistas para simplificar fracciones."""
     m = re.search(r"\[FRAC:\s*(\d+)\s*/\s*(\d+)\s*([+\-])\s*(\d+)\s*/\s*(\d+)\s*\]", context or "")
     if m:
         a, b, op, c, d = int(m.group(1)), int(m.group(2)), m.group(3), int(m.group(4)), int(m.group(5))
@@ -142,29 +214,110 @@ def _frac_simplificar_hint(context: str, err: int, cycle: str) -> str:
             n, den = map(int, all_fracs[-1])
             g = math.gcd(n, den)
 
-    # Siempre calcula g con la fracción actual
-    g = math.gcd(n, den)
-
-    
-    # ⬇️ IMPORTANTE: añade el marcador en TODAS las pistas para que persista
+    # Marcador para persistir el GCD
     marker = f"<span style='display:none'>[GCD:{g}]</span>"
 
     if g == 1:
-        return f"✅ No se puede simplificar más, ya que {n} y {den} no tienen divisores comunes."
+        return (
+            f"✅ No se puede simplificar más, ya que {n} y {den} "
+            "no tienen divisores comunes mayores que 1."
+        )
 
     if err == 1:
-        print("DEBUG:", err, context)
-        return (f"👉 Busca un número mayor que 1 que divida tanto a {n} como a {den}. "
-                + _question("¿Qué número puedes usar como divisor común?")
-                + marker)
-    elif err == 2:
-        return (f"🧮 Divide el numerador y el denominador por ese número común (por ejemplo, {g}). "
-                + _question("¿Qué fracción obtienes después de dividir?")
-                + marker)
-    elif err == 3:
-        return (f"📘 Vamos juntos: {n} ÷ {g} = {n//g} y {den} ÷ {g} = {den//g}. "
-                + _question("¿Cuál es la fracción simplificada?")
-                + marker)
+        return (
+            f"👉 Busca un número mayor que 1 que divida tanto a <b>{n}</b> como a <b>{den}</b>. "
+            + _question("¿Qué número puedes usar como divisor común?")
+            + marker
+        )
+    
+    if err == 2:
+        return (
+            f"🧮 Divide el numerador y el denominador por ese número común. "
+            f"Por ejemplo, si usas <b>{g}</b>: {n}÷{g} y {den}÷{g}. "
+            + _question("¿Qué fracción obtienes después de dividir?")
+            + marker
+        )
+    
+    if err == 3:
+        return (
+            f"💡 Vamos juntos:\n"
+            f"{n} ÷ {g} = {n // g}\n"
+            f"{den} ÷ {g} = {den // g}\n"
+            + _question("¿Cuál es la fracción simplificada?")
+            + marker
+        )
+    
+    if err >= 4:
+        return (
+            f"✅ Muy bien. La fracción simplificada es:\n"
+            f"{n}/{den} ÷ {g}/{g} = <b>{n // g}/{den // g}</b>"
+        )
+    
+    return "Divide numerador y denominador por el MCD."
+
+# ────────── Integración con OpenAI ──────────
+try:
+    from openai import OpenAI
+    import os
+    _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    _USE_AI = bool(os.getenv("OPENAI_API_KEY"))
+except Exception:
+    _client = None
+    _USE_AI = False
+
+PROMPT = (
+    "Eres Tutorín (profesor de Primaria, LOMLOE). Da pistas concisas (1–2 frases) "
+    "para operaciones con fracciones. No reveles la solución completa. "
+    "Paso: {step} | Contexto: {context} | Respuesta: {answer} | Errores: {err}"
+)
+
+def _ai_hint(step: str, context: str, answer: str, err: int) -> Optional[str]:
+    """Genera pista con OpenAI si err >= 2."""
+    if not _USE_AI or not _client or err < 2:
+        return None
+    
+    try:
+        res = _client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": "Eres un profesor de Primaria empático y paciente."},
+                {"role": "user", "content": PROMPT.format(step=step, context=context, answer=answer, err=err)},
+            ],
+            temperature=0.4,
+            max_tokens=120,
+        )
+        return (res.choices[0].message.content or "").strip()
+    except Exception:
+        return None
+
+# ────────── Función principal (API pública) ──────────
+def get_hint(hint_type: str, errors: int = 0, context: str = "", answer: str = "") -> str:
+    """
+    Genera pista para fracciones según hint_type y nivel de error.
+    
+    Args:
+        hint_type: 'frac_inicio', 'frac_mcm', 'frac_equiv', 'frac_operacion', 'frac_simplificar'
+        errors: nivel de error (0-4+)
+        context: contexto del motor
+        answer: respuesta del alumno
+    """
+    ec = max(1, min(int(errors or 1), 4))
+    
+    # Intentar con IA
+    ai = _ai_hint(hint_type, context, answer, ec)
+    if ai:
+        return ai
+    
+    # Fallback local
+    if hint_type == "frac_inicio":
+        return _frac_inicio_hint(context, ec, "c2")
+    elif hint_type == "frac_mcm":
+        return _frac_mcm_hint(context, ec, "c2")
+    elif hint_type == "frac_equiv":
+        return _frac_equiv_hint(context, ec, "c2")
+    elif hint_type == "frac_operacion":
+        return _frac_operacion_hint(context, ec, "c2")
+    elif hint_type == "frac_simplificar":
+        return _frac_simplificar_hint(context, ec, "c2")
     else:
-        return (f"✅ Muy bien. {n}/{den} ÷ {g}/{g} = <b>{n//g}/{den//g}</b>. "
-                f"Esa es la fracción simplificada.")
+        return "Dime qué parte no entiendes (m.c.m., numeradores, operación o simplificar)."

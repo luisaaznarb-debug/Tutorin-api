@@ -7,40 +7,65 @@
     ],
     "resta": [
       "sub_col",
+      "sub_borrow",
       "sub_resta",
       "sub_resultado"
     ],
     "multiplicacion": [
       "mult_parcial",
+      "mult_suma",
       "mult_total",
+      "mul_col",
+      "mul_result",
       "mult_resultado"
     ],
     "division": [
+      "div_grupo",
       "div_qdigit",
       "div_resta",
+      "div_bajar",
+      "div_step",
+      "div_result",
       "div_resultado"
     ],
     "fracciones": [
       "frac_inicio",
+      "frac_intro",
+      "frac_den",
       "frac_mcm",
       "frac_equiv",
+      "frac_num",
+      "frac_sum",
       "frac_operacion",
       "frac_simplificar",
-      "frac_resultado"
+      "frac_resultado",
+      "frac_result"
     ],
     "decimales": [
+      "decimal_start",
       "decimal_identificar",
       "decimal_alinear",
       "decimal_operar",
-      "decimal_resultado"
+      "decimal_resultado",
+      "decimal_error"
     ],
     "porcentajes": [
+      "perc_frac",
+      "perc_mult",
+      "perc_simplify",
+      "perc_result",
       "percent_identificar",
       "percent_transformar",
       "percent_calculo",
       "percent_resultado"
     ],
     "medidas": [
+      "meas_estimate",
+      "meas_factor",
+      "meas_calc",
+      "meas_result",
+      "meas_resultado",
+      "meas_unknown",
       "measure_identificar",
       "measure_convertir",
       "measure_operar",
@@ -49,10 +74,48 @@
     "geometria": [
       "geo_identificar",
       "geo_formula",
+      "geo_substitute",
       "geo_sustituir",
-      "geo_resultado"
+      "geo_calc",
+      "geo_result",
+      "geo_resultado",
+      "geo_missing",
+      "geo_error"
+    ],
+    "estadistica": [
+      "stat_intro",
+      "stat_frac",
+      "stat_decimal",
+      "stat_percent",
+      "stat_result",
+      "data_leer",
+      "data_interpretar",
+      "data_comparar",
+      "data_resultado",
+      "prob_evento",
+      "prob_caso",
+      "prob_resultado"
+    ],
+    "estadística": [
+      "stat_intro",
+      "stat_frac",
+      "stat_decimal",
+      "stat_percent",
+      "stat_result",
+      "data_leer",
+      "data_interpretar",
+      "data_comparar",
+      "data_resultado",
+      "prob_evento",
+      "prob_caso",
+      "prob_resultado"
     ],
     "graficos_probabilidad": [
+      "stat_intro",
+      "stat_frac",
+      "stat_decimal",
+      "stat_percent",
+      "stat_result",
       "data_leer",
       "data_interpretar",
       "data_comparar",
@@ -62,11 +125,21 @@
       "prob_resultado"
     ],
     "problemas": [
+      "problem_understand",
+      "problem_plan",
+      "problem_execute",
+      "problem_check",
+      "problem_error",
+      "problem_unknown",
       "prob_comprension",
       "prob_operacion",
       "prob_calculo",
       "prob_comprobacion",
-      "prob_resultado"
+      "prob_resultado",
+      "add_col",
+      "sub_col",
+      "mult_parcial",
+      "div_qdigit"
     ]
   },
   "lengua": {
@@ -108,6 +181,13 @@
       "val_respeto",
       "val_empatia",
       "val_colaboracion"
+    ]
+  },
+  "general": {
+    "ai_generated": [
+      "ai_generated",
+      "general_indefinido",
+      "general_error"
     ]
   }
 }

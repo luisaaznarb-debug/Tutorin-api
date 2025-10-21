@@ -104,9 +104,14 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
     cols, final_carry = _compute_columns(a, b)
     n = len(cols)
 
-    solved_digits = [cols[j][4] for j in range(min(step_now, n))]
+    # ✅ FIX: Calcular cuántos dígitos ya están resueltos
+    # Si step_now=0, no hay nada resuelto
+    # Si step_now=1, hay 1 dígito resuelto
+    # etc.
+    num_solved = min(step_now, n)
+    solved_digits = [cols[j][4] for j in range(num_solved)]
 
-    # Paso de columnas
+    # Paso de columnas (0 hasta n-1)
     if 0 <= step_now < n:
         board = _board(a, b, solved_right_digits=solved_digits, show_sum_line=False)
         col = cols[step_now]
@@ -118,10 +123,10 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": expected,
             "topic": "suma",
             "hint_type": "add_col",
-            "next_step": step_now + 1  # ✅ Avanzar paso
+            "next_step": step_now + 1  # ✅ Avanzar al siguiente paso
         }
 
-    # Paso de llevada final
+    # Paso de llevada final (step_now == n)
     if step_now == n and final_carry > 0:
         board = _board(a, b, solved_right_digits=solved_digits, show_sum_line=False)
         return {
@@ -130,10 +135,10 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": str(final_carry),
             "topic": "suma",
             "hint_type": "add_carry",
-            "next_step": step_now + 1  # ✅ Avanza
+            "next_step": step_now + 1  # ✅ Avanza al cierre
         }
 
-    # Cierre final
+    # Cierre final (step_now > n o no hay llevada final)
     result_digits = [col[4] for col in cols]
     if final_carry > 0:
         result_digits.append(final_carry)
@@ -141,8 +146,8 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
     return {
         "status": "done",
         "message": f"{board}¡Buen trabajo! Has terminado la suma.",
-        "expected_answer": "ok",
+        "expected_answer": str(a + b),
         "topic": "suma",
-        "hint_type": "add_col",
+        "hint_type": "add_resultado",
         "next_step": step_now + 1  # ✅ Marca cierre
     }
