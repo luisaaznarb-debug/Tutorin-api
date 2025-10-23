@@ -100,7 +100,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": formula,
-            "topic": "geometría",
+            "topic": "geometria",
             "hint_type": "geo_formula",
             "next_step": step_now + 1
         }
@@ -112,7 +112,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
                 "status": "done",
                 "message": "❌ No se encontraron valores numéricos en la consigna.",
                 "expected_answer": "error",
-                "topic": "geometría",
+                "topic": "geometria",
                 "hint_type": "geo_missing",
                 "next_step": step_now + 1
             }
@@ -134,7 +134,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": formula_filled,
-            "topic": "geometría",
+            "topic": "geometria",
             "hint_type": "geo_substitute",
             "next_step": step_now + 1
         }
@@ -147,7 +147,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
                 "status": "done",
                 "message": "❌ No se pudo calcular el resultado.",
                 "expected_answer": "error",
-                "topic": "geometría",
+                "topic": "geometria",
                 "hint_type": "geo_error",
                 "next_step": step_now + 1
             }
@@ -159,7 +159,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": str(round(result, 2)),
-            "topic": "geometría",
+            "topic": "geometria",
             "hint_type": "geo_calc",
             "next_step": step_now + 1
         }
@@ -176,7 +176,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "done",
             "message": msg,
             "expected_answer": str(round(result, 2)),
-            "topic": "geometría",
+            "topic": "geometria",
             "hint_type": "geo_result",
             "next_step": step_now + 1
         }
@@ -186,7 +186,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
         "status": "done",
         "message": "✅ Has completado el ejercicio de geometría correctamente.",
         "expected_answer": "ok",
-        "topic": "geometría",
+        "topic": "geometria",
         "hint_type": "geo_result",
         "next_step": step_now + 1
     }

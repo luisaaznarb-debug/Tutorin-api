@@ -4,21 +4,19 @@ hints_decimals.py
 Pistas progresivas para decimales según nivel de error.
 Compatible con decimals_engine.py
 """
-
 from typing import Optional
 
 # ────────── Pistas por nivel ──────────
 def get_hint(hint_type: str, errors: int = 0) -> str:
     """
     Devuelve una pista adaptada al tipo de paso y número de errores.
-    
     Args:
         hint_type: tipo de paso ('decimal_start', 'decimal_identificar', etc.)
         errors: nivel de error (0-4+)
     """
     hint_type = (hint_type or "").strip().lower()
     errors = max(0, min(int(errors or 0), 4))
-
+    
     # ────────── INICIO / DETECCIÓN ──────────
     if hint_type == "decimal_start":
         if errors == 0:
@@ -36,7 +34,7 @@ def get_hint(hint_type: str, errors: int = 0) -> str:
                 "✅ Los decimales se escriben con coma (en España) o punto (en otros países). "
                 "La parte antes de la coma son los <b>enteros</b>, y la parte después son las <b>décimas, centésimas</b>..."
             )
-
+    
     if hint_type == "decimal_identificar":
         if errors == 0:
             return (
@@ -51,7 +49,7 @@ def get_hint(hint_type: str, errors: int = 0) -> str:
                 "💡 Los símbolos matemáticos son: + (suma), − (resta), × (multiplicación), ÷ (división). "
                 "Identifica cuál aparece en tu operación."
             )
-
+    
     # ────────── ALINEAR COMAS ──────────
     if hint_type == "decimal_alinear":
         if errors == 0:
@@ -76,7 +74,7 @@ def get_hint(hint_type: str, errors: int = 0) -> str:
                 "porque cada cifra tiene que coincidir con su misma posición "
                 "(unidades con unidades, décimas con décimas)."
             )
-
+    
     # ────────── OPERAR SIN COMA ──────────
     if hint_type == "decimal_operar":
         if errors == 0:
@@ -100,7 +98,7 @@ def get_hint(hint_type: str, errors: int = 0) -> str:
                 "✅ Recuerda: quita la coma, haz la operación normal y al final vuelve a colocarla. "
                 "Cuenta cuántas cifras había detrás de la coma entre los dos números."
             )
-
+    
     # ────────── RECOLOCAR COMA (RESULTADO FINAL) ──────────
     if hint_type == "decimal_resultado":
         if errors == 0:
@@ -125,14 +123,14 @@ def get_hint(hint_type: str, errors: int = 0) -> str:
                 "Contamos decimales: 1 + 1 = 2 decimales.\n"
                 "Resultado: 4,80 (o 4,8)."
             )
-
+    
     # ────────── ERROR / DESCONOCIDO ──────────
     if hint_type == "decimal_error":
         return (
             "😅 Parece que algo no encaja. Intenta revisar la operación paso a paso. "
             "A veces ayuda escribir los números alineados y repasar la posición de la coma."
         )
-
+    
     # ────────── FALLBACK ──────────
     return (
         "🤔 Recuerda: en las operaciones con decimales, "
@@ -157,7 +155,7 @@ except Exception:
 
 PROMPT = (
     "Eres Tutorín (profesor de Primaria, LOMLOE). Da pistas concisas (1–2 frases) "
-    "para operaciones con decimales. No reveles la solución completa. "
+    "para operaciones con decimales. No reveles la solución completa.  "
     "Paso: {step} | Errores: {err}"
 )
 
@@ -165,7 +163,6 @@ def _ai_hint(hint_type: str, err: int) -> Optional[str]:
     """Genera pista con OpenAI si err >= 2."""
     if not _USE_AI or not _client or err < 2:
         return None
-    
     try:
         res = _client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),

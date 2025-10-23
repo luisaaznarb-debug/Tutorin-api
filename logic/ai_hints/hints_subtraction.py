@@ -4,14 +4,11 @@ hints_subtraction.py
 Pistas progresivas para resta según nivel de error.
 Compatible con subtraction_engine.py
 """
-
 from .hints_utils import _extract_pre_block, _first_int_on_line, _question
 import re
 from typing import Optional
 
-# ────────── Utilidades ──────────
 def _parse_sub_from_context(ctx: str):
-    """Extrae los dos números de una resta del contexto."""
     lines = _extract_pre_block(ctx).splitlines()
     if len(lines) < 2:
         return None
@@ -22,7 +19,6 @@ def _parse_sub_from_context(ctx: str):
     return (a, b)
 
 def _explain_column_sub(a_digit: int, b_digit: int, borrowed: bool) -> str:
-    """Explica la resta de una columna con préstamo."""
     if borrowed:
         actual_a = a_digit - 1
         if actual_a < b_digit:
@@ -40,22 +36,10 @@ def _explain_column_sub(a_digit: int, b_digit: int, borrowed: bool) -> str:
             )
         else:
             explanation = f"{a_digit} - {b_digit} = {a_digit - b_digit}"
-    
     return explanation
 
-# ────────── Pistas progresivas ──────────
 def _sub_col_hint(context: str, err: int, cycle: str) -> str:
-    """
-    Pistas para restar una columna.
-    Niveles:
-    - 1: pista básica
-    - 2: recordatorio con préstamo
-    - 3: explicación paso a paso
-    - 4+: casi-solución
-    """
     parsed = _parse_sub_from_context(context)
-    
-    # Nivel 1: pista básica
     if err == 1:
         if parsed:
             a, b = parsed
@@ -69,16 +53,12 @@ def _sub_col_hint(context: str, err: int, cycle: str) -> str:
             "Si la de arriba es menor, pide prestada 1 de la izquierda. "
             + _question("¿Qué resultado obtienes?")
         )
-    
-    # Nivel 2: recordatorio con préstamo
     if err == 2:
         return (
             "🧮 Si pediste prestado, recuerda que equivale a <b>10 unidades</b>. "
             "Suma 10 a la cifra de arriba y luego resta. No olvides restar 1 de la siguiente columna. "
             + _question("¿Qué número queda?")
         )
-    
-    # Nivel 3: explicación paso a paso
     if err == 3:
         if parsed:
             a, b = parsed
@@ -91,16 +71,25 @@ def _sub_col_hint(context: str, err: int, cycle: str) -> str:
             "Si una cifra de arriba es menor que la de abajo, pide prestada 10 de la siguiente columna. "
             + _question("¿Cuál es la diferencia?")
         )
-    
-    # Nivel 4+: casi-solución
     if err >= 4:
         if parsed:
             a, b = parsed
             result = a - b
             return f"✅ La resta completa es: {a} − {b} = <b>{result}</b>."
         return "✅ Revisa cada columna y escribe el resultado correcto."
-    
     return "Resta columna por columna, pidiendo prestado si es necesario."
+
+def _sub_borrow_hint(context: str, err: int, cycle: str) -> str:
+    if err == 1:
+        return "👉 ¿Necesitas pedir prestado? Si la cifra de arriba es menor que la de abajo, pide 1 de la columna siguiente."
+    if err == 2:
+        return "🧮 Pedir prestado equivale a sumar 10 a la cifra de arriba. No olvides restar 1 de la siguiente columna."
+    if err >= 3:
+        return "💡 Ejemplo: si tienes 3 - 7, pide prestado → 13 - 7 = 6, y la siguiente columna pierde 1."
+    return "Revisa si necesitas pedir prestado en esta columna."
+
+def _sub_result_hint(context: str, err: int, cycle: str) -> str:
+    return "✅ ¡Muy bien! Has terminado la resta correctamente."
 
 # ────────── Integración con OpenAI ──────────
 try:
@@ -119,10 +108,8 @@ PROMPT = (
 )
 
 def _ai_hint(context: str, answer: str, err: int) -> Optional[str]:
-    """Genera pista usando OpenAI si está disponible y err >= 2."""
     if not _USE_AI or not _client or err < 2:
         return None
-    
     try:
         res = _client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
@@ -139,21 +126,16 @@ def _ai_hint(context: str, answer: str, err: int) -> Optional[str]:
 
 # ────────── Función principal (API pública) ──────────
 def get_hint(hint_type: str, errors: int = 0, context: str = "", answer: str = "") -> str:
-    """
-    Genera pista para resta según hint_type y nivel de error.
-    
-    Args:
-        hint_type: 'sub_col', 'sub_resta', 'sub_resultado'
-        errors: nivel de error (0-4+)
-        context: contexto del motor
-        answer: respuesta del alumno
-    """
     ec = max(1, min(int(errors or 1), 4))
-    
-    # Intentar con IA si err >= 2
     ai = _ai_hint(context, answer, ec)
     if ai:
         return ai
-    
-    # Fallback a pistas locales
-    return _sub_col_hint(context, ec, "c2")
+
+    if hint_type == "sub_col":
+        return _sub_col_hint(context, ec, "c2")
+    elif hint_type == "sub_borrow":
+        return _sub_borrow_hint(context, ec, "c2")
+    elif hint_type == "sub_resultado":
+        return _sub_result_hint(context, ec, "c2")
+    else:
+        return "Pista no disponible para este paso."

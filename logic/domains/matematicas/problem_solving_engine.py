@@ -66,9 +66,9 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
     try:
         result = engine.handle_step(question, step_now, last_answer, error_count, cycle)
         if result:
-            # Añadimos la referencia del motor para el seguimiento de Tutorín
+            # Añadimos la referencia del motor para seguimiento (sin cambiar topic)
             result["source_engine"] = engine.__name__.replace("_engine", "")
-            result["topic"] = "problemas"
+            # NO sobrescribimos result["topic"] → se mantiene el original (suma, resta, etc.)
             return result
         else:
             raise Exception("Motor sin respuesta válida.")
@@ -77,7 +77,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "done",
             "message": f"⚠️ Error al procesar con el motor {engine.__name__}: {str(e)}",
             "expected_answer": "error",
-            "topic": "problemas",
+            "topic": "problemas",  # solo en errores
             "hint_type": "problem_error",
             "next_step": step_now + 1
         }

@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 from typing import List, Tuple
-from logic.ai_hints.ai_router import generate_hint_with_ai
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Utilidades internas
-# ──────────────────────────────────────────────────────────────────────────────
 
 _PLACES = [
     "unidades", "decenas", "centenas", "millares", "decenas de millar",
@@ -57,7 +52,7 @@ def _board(a: int, b: int, solved_right_digits: List[int], show_sum_line: bool) 
     w = _width(a, b)
     rj = lambda s: s.rjust(w)
     lines = [rj(str(a)), rj("+ " + str(b)), rj("-" * max(len(str(a)), len(str(b)) + 2))]
-    partial = "".join(str(d) for d in solved_right_digits[::-1])
+    partial = " ".join(str(d) for d in solved_right_digits[::-1])
     lines.append(rj(partial))
     if show_sum_line:
         lines.append(rj("-" * max(len(partial), 1)))
@@ -85,16 +80,15 @@ def _msg_col(a: int, b: int, col, idx: int, cycle: str) -> str:
     return (
         f"👉 {place.capitalize()}: {d1}+{d2}"
         + (f"+{carry_in}" if carry_in else "")
-        + f". Si es ≥10, lleva 1."
+        + ". Si es ≥10, lleva 1."
     )
 
 def _msg_carry(final_carry: int) -> str:
     return f"👉 Escribe la <b>llevada final</b>: <b>{final_carry}</b>."
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────
 # Motor principal
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ──────────────────────────────────────────────
 def handle_step(question: str, step_now: int, last_answer: str, error_count: int, cycle: str = "c2"):
     parsed = _parse_add(question)
     if not parsed:
@@ -103,11 +97,6 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
     cycle = _norm_cycle(cycle)
     cols, final_carry = _compute_columns(a, b)
     n = len(cols)
-
-    # ✅ FIX: Calcular cuántos dígitos ya están resueltos
-    # Si step_now=0, no hay nada resuelto
-    # Si step_now=1, hay 1 dígito resuelto
-    # etc.
     num_solved = min(step_now, n)
     solved_digits = [cols[j][4] for j in range(num_solved)]
 
@@ -123,7 +112,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": expected,
             "topic": "suma",
             "hint_type": "add_col",
-            "next_step": step_now + 1  # ✅ Avanzar al siguiente paso
+            "next_step": step_now + 1
         }
 
     # Paso de llevada final (step_now == n)
@@ -135,19 +124,19 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "expected_answer": str(final_carry),
             "topic": "suma",
             "hint_type": "add_carry",
-            "next_step": step_now + 1  # ✅ Avanza al cierre
+            "next_step": step_now + 1
         }
 
-    # Cierre final (step_now > n o no hay llevada final)
+    # Cierre final
     result_digits = [col[4] for col in cols]
     if final_carry > 0:
         result_digits.append(final_carry)
     board = _board(a, b, solved_right_digits=result_digits, show_sum_line=True)
     return {
         "status": "done",
-        "message": f"{board}¡Buen trabajo! Has terminado la suma.",
+        "message": f"{board}✅ ¡Buen trabajo! Has terminado la suma.",
         "expected_answer": str(a + b),
         "topic": "suma",
         "hint_type": "add_resultado",
-        "next_step": step_now + 1  # ✅ Marca cierre
+        "next_step": step_now + 1
     }

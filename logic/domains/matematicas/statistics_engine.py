@@ -53,7 +53,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": "favorables/total",
-            "topic": "estadística",
+            "topic": "estadistica",
             "hint_type": "stat_intro",
             "next_step": step_now + 1
         }
@@ -70,7 +70,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": f"{favorables}/{total}",
-            "topic": "estadística",
+            "topic": "estadistica",
             "hint_type": "stat_frac",
             "next_step": step_now + 1
         }
@@ -86,7 +86,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": str(prob),
-            "topic": "estadística",
+            "topic": "estadistica",
             "hint_type": "stat_decimal",
             "next_step": step_now + 1
         }
@@ -103,7 +103,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "ask",
             "message": msg,
             "expected_answer": f"{perc}%",
-            "topic": "estadística",
+            "topic": "estadistica",
             "hint_type": "stat_percent",
             "next_step": step_now + 1
         }
@@ -122,7 +122,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
             "status": "done",
             "message": msg,
             "expected_answer": f"{prob}",
-            "topic": "estadística",
+            "topic": "estadistica",
             "hint_type": "stat_result",
             "next_step": step_now + 1
         }
@@ -132,7 +132,7 @@ def handle_step(question: str, step_now: int, last_answer: str, error_count: int
         "status": "done",
         "message": "✅ Has completado correctamente el ejercicio de probabilidad o gráficos.",
         "expected_answer": "ok",
-        "topic": "estadística",
+        "topic": "estadistica",
         "hint_type": "stat_result",
         "next_step": step_now + 1
     }

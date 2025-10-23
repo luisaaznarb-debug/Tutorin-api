@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple
 # ─────────────────────────────────────────────────────────
 # Parseo y helpers
 # ─────────────────────────────────────────────────────────
-
 def _parse_div(q: str):
     """Acepta '3457 / 3', '3457:3' o '3457 ÷ 3'."""
     q2 = q.replace("÷", "/").replace(":", "/")
@@ -28,26 +27,22 @@ def _first_group_len(dividend: int, divisor: int) -> int:
 def _compute_steps(dividend: int, divisor: int) -> Tuple[List[Dict], int, int, int]:
     """
     Devuelve:
-      - steps: [{group, qdigit, product, remainder, [next_digit], [new_group], quotient_prefix}]
-      - quotient_full, remainder_final
-      - first_k: nº de dígitos del primer grupo
+        - steps: [{ group, qdigit, product, remainder, [next_digit], [new_group], quotient_prefix }]
+        - quotient_full, remainder_final
+        - first_k: nº de dígitos del primer grupo
     """
     s = str(dividend)
     n = len(s)
-
     first_k = _first_group_len(dividend, divisor)
     group = int(s[:first_k])
-
     steps: List[Dict] = []
     quotient_str = ""
     pos = first_k
-
     while True:
         qdigit = group // divisor
         product = qdigit * divisor
         remainder = group - product
         quotient_str += str(qdigit)
-
         item = {
             "group": group,
             "qdigit": qdigit,
@@ -55,7 +50,6 @@ def _compute_steps(dividend: int, divisor: int) -> Tuple[List[Dict], int, int, i
             "remainder": remainder,
             "quotient_prefix": quotient_str
         }
-
         if pos < n:
             next_digit = int(s[pos])
             new_group = remainder * 10 + next_digit
@@ -67,7 +61,6 @@ def _compute_steps(dividend: int, divisor: int) -> Tuple[List[Dict], int, int, i
         else:
             steps.append(item)
             break
-
     quotient_full = int(quotient_str)
     remainder_final = steps[-1]["remainder"]
     return steps, quotient_full, remainder_final, first_k
@@ -75,7 +68,6 @@ def _compute_steps(dividend: int, divisor: int) -> Tuple[List[Dict], int, int, i
 # ─────────────────────────────────────────────────────────
 # Render: DIVIDENDO a la IZQUIERDA (4578 | 2) y COCIENTE DEBAJO del divisor
 # ─────────────────────────────────────────────────────────
-
 def _render_pre_left_dividend(dividend: int,
                               divisor: int,
                               steps: List[Dict],
@@ -86,10 +78,10 @@ def _render_pre_left_dividend(dividend: int,
     """
     Dos columnas monoespaciadas:
       - Izquierda: operaciones bajo el DIVIDENDO.
-      - Derecha : DIVISOR y, DEBAJO, el COCIENTE parcial/total (solo cifras confirmadas).
+      - Derecha: DIVISOR y, DEBAJO, el COCIENTE parcial/total (solo cifras confirmadas).
     Estructura:
-      1) Cabecera  : "<dividendo> | <divisor>"
-      2) Cociente  : " " * len(dividendo) + "   " + <cociente-confirmado>
+      1) Cabecera: "<dividendo> | <divisor>"
+      2) Cociente: " " * len(dividendo) + "   " + <cociente-confirmado>
       3) Operaciones bajo el dividendo: producto, guiones, resto (con ceros a la izda) y flecha de bajada.
          * IMPORTANTE: el producto NO se pinta en el subpaso de cifra del cociente (sub==0) para no revelar.
     """
@@ -99,51 +91,40 @@ def _render_pre_left_dividend(dividend: int,
     Rmin = len(s_divisor)         # ancho mínimo derecha (divisor)
     SEP_BAR = " | "               # separador en cabecera
     SEP = "   "                   # separador en el resto de filas
-
     # Cifras de cociente confirmadas:
     # todas las de bloques previos + (la del bloque actual si ya estamos en la RESTA o posterior).
     confirmed = block + (1 if sub >= 1 else 0)
     q_parcial = steps[block]["quotient_prefix"][:confirmed] if block < len(steps) else steps[-1]["quotient_prefix"]
     q_shown = (steps[-1]["quotient_prefix"] if show_full_quotient else q_parcial) or ""
-
     R = max(Rmin, len(q_shown))
-
     rows: List[str] = []
-
     # 1) Cabecera: dividendo | divisor
     rows.append(f"{s_div}{SEP_BAR}{s_divisor.rjust(R)}")
-
     # 2) Fila de cociente (debajo del divisor, en la columna derecha)
     rows.append(" " * L + SEP + q_shown.rjust(R))
-
     # Helper: operaciones bajo el dividendo
     def add_left(text: str):
         rows.append(text.ljust(L) + SEP + " " * R)
-
     # 3) Bloques terminados (pintamos todo)
     for j in range(0, block):
         end_idx = first_k - 1 + j
         prod = str(steps[j]["product"])
         rem_raw = str(steps[j]["remainder"])
         rem = rem_raw.rjust(len(s_divisor), "0")  # p. ej., '09' para comparar con el divisor
-
         off_prod = end_idx - (len(prod) - 1)
-        off_rem  = end_idx - (len(rem)  - 1)
-
+        off_rem = end_idx - (len(rem) - 1)
         add_left(" " * off_prod + prod)
         add_left(" " * off_prod + "-" * len(prod))
-        add_left(" " * off_rem  + rem)
+        add_left(" " * off_rem + rem)
         if "next_digit" in steps[j]:
             arrow_col = end_idx + 1
             add_left(" " * arrow_col + "↓" + str(steps[j]["next_digit"]))
-
     # 4) Bloque actual (NO mostrar producto si aún estamos eligiendo la cifra del cociente)
     if block < len(steps):
         end_idx = first_k - 1 + block
         prod = str(steps[block]["product"])
         rem_raw = str(steps[block]["remainder"])
         rem = rem_raw.rjust(len(s_divisor), "0")
-
         if sub >= 1:
             off_prod = end_idx - (len(prod) - 1)
             add_left(" " * off_prod + prod)
@@ -154,23 +135,19 @@ def _render_pre_left_dividend(dividend: int,
             if "next_digit" in steps[block]:
                 arrow_col = end_idx + 1
                 add_left(" " * arrow_col + "↓" + str(steps[block]["next_digit"]))
-
     return "<pre style='font-family:monospace;line-height:1.25;margin:6px 0 0 0'>" + "\n".join(rows) + "</pre>"
 
 # ─────────────────────────────────────────────────────────
 # Motor por pasos
 # ─────────────────────────────────────────────────────────
-
 def handle_div_step(question: str, step_now: int, last_answer: str, error_count: int):
     parsed = _parse_div(question)
     if not parsed:
         return None
     dividend, divisor = parsed
-
     steps, q_full, r_final, first_k = _compute_steps(dividend, divisor)
     # subpasos por bloque: 3 (cifra, resta, bajar) excepto el último que es 2 (no hay bajar)
     subcounts = [3] * (len(steps) - 1) + [2]
-
     # Paso 0: elegir primer grupo — TEXTO MEJORADO
     if step_now == 0:
         pre = _render_pre_left_dividend(dividend, divisor, steps, first_k, block=0, sub=0, show_full_quotient=False)
@@ -189,30 +166,26 @@ def handle_div_step(question: str, step_now: int, last_answer: str, error_count:
             "hint_type": "div_grupo",
             "next_step": step_now + 1
         }
-
     # Mapear step_now → (block, sub)
     s = step_now - 1
     block = 0
     while block < len(subcounts) and s >= subcounts[block]:
         s -= subcounts[block]
         block += 1
-
     # Fin (tras el último resto): tablero final con cociente completo DEBAJO del divisor
     if block >= len(steps):
         pre = _render_pre_left_dividend(dividend, divisor, steps, first_k, block=len(steps)-1, sub=2, show_full_quotient=True)
         return {
             "status": "done",
-            "message": f"{pre}¡Buen trabajo! Has completado todos los pasos de la división.",
+            "message": f"{pre}✅ ¡Buen trabajo! Has completado todos los pasos de la división.",
             "expected_answer": "ok",
             "topic": "division",
-            "hint_type": "general",
+            "hint_type": "div_resultado",  # ✅ CORREGIDO: ya no es "general"
             "next_step": step_now + 1
         }
-
     sub = s  # 0: cifra del cociente, 1: resta, 2: bajar
     show_full = (block == len(steps) - 1 and sub >= 1)
     pre = _render_pre_left_dividend(dividend, divisor, steps, first_k, block, sub, show_full_quotient=show_full)
-
     if sub == 0:  # elegir cifra del cociente
         msg = (
             f"{pre}"
@@ -227,7 +200,6 @@ def handle_div_step(question: str, step_now: int, last_answer: str, error_count:
             "hint_type": "div_qdigit",
             "next_step": step_now + 1
         }
-
     if sub == 1:  # resta
         msg = (
             f"{pre}"
@@ -242,7 +214,6 @@ def handle_div_step(question: str, step_now: int, last_answer: str, error_count:
             "hint_type": "div_resta",
             "next_step": step_now + 1
         }
-
     if sub == 2 and "next_digit" in steps[block]:  # bajar cifra
         msg = (
             f"{pre}"
@@ -257,16 +228,14 @@ def handle_div_step(question: str, step_now: int, last_answer: str, error_count:
             "hint_type": "div_bajar",
             "next_step": step_now + 1
         }
-
     # Fallback
     return {
         "status": "ask",
         "message": f"{pre}Sigamos con la división.",
         "topic": "division",
-        "hint_type": "general",
+        "hint_type": "div_resultado",
         "next_step": step_now + 1
     }
-
 
 # ✅ ALIAS PARA COMPATIBILIDAD
 def handle_step(question: str, step_now: int, last_answer: str, error_count: int, cycle: str = "c2"):

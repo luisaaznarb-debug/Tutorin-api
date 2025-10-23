@@ -112,26 +112,30 @@ def generate_hint_with_ai(
 
     # --- Suma ---
     if t == "suma":
-        hint = get_addition_hint("add_col", e, ctx, answer)
-        _validate_hint_type(t, "add_col")
+        actual_step = step or "add_col"
+        hint = get_addition_hint(actual_step, e, ctx, answer)
+        _validate_hint_type(t, actual_step)
         return hint
 
     # --- Resta ---
     if t == "resta":
-        hint = get_subtraction_hint("sub_col", e, ctx, answer)
-        _validate_hint_type(t, "sub_col")
+        actual_step = step or "sub_col"
+        hint = get_subtraction_hint(actual_step, e, ctx, answer)
+        _validate_hint_type(t, actual_step)
         return hint
 
     # --- Multiplicación ---
     if t == "multiplicacion":
-        hint = get_multiplication_hint("mult_parcial", e, ctx, answer)
-        _validate_hint_type(t, "mult_parcial")
+        actual_step = step or "mult_parcial"
+        hint = get_multiplication_hint(actual_step, e, ctx, answer)
+        _validate_hint_type(t, actual_step)
         return hint
 
     # --- División ---
     if t == "division":
-        hint = get_division_hint("div_qdigit", e, ctx, answer)
-        _validate_hint_type(t, "div_qdigit")
+        actual_step = step or "div_qdigit"
+        hint = get_division_hint(actual_step, e, ctx, answer)
+        _validate_hint_type(t, actual_step)
         return hint
 
     # --- Fracciones ---
@@ -178,7 +182,7 @@ def generate_hint_with_ai(
         return hint
 
     # --- Estadística ---
-    if t in ("estadistica", "estadística", "probabilidad"):
+    if t in ("estadistica", "probabilidad"):  # ✅ Eliminado "estadística" con acento
         hint = get_statistics_hint(step, e)
         _validate_hint_type(t, step)
         return hint

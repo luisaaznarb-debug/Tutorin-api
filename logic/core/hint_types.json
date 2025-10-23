@@ -8,7 +8,6 @@
     "resta": [
       "sub_col",
       "sub_borrow",
-      "sub_resta",
       "sub_resultado"
     ],
     "multiplicacion": [
@@ -30,16 +29,10 @@
     ],
     "fracciones": [
       "frac_inicio",
-      "frac_intro",
-      "frac_den",
       "frac_mcm",
       "frac_equiv",
-      "frac_num",
-      "frac_sum",
       "frac_operacion",
-      "frac_simplificar",
-      "frac_resultado",
-      "frac_result"
+      "frac_simplificar"
     ],
     "decimales": [
       "decimal_start",
@@ -83,20 +76,6 @@
       "geo_error"
     ],
     "estadistica": [
-      "stat_intro",
-      "stat_frac",
-      "stat_decimal",
-      "stat_percent",
-      "stat_result",
-      "data_leer",
-      "data_interpretar",
-      "data_comparar",
-      "data_resultado",
-      "prob_evento",
-      "prob_caso",
-      "prob_resultado"
-    ],
-    "estadística": [
       "stat_intro",
       "stat_frac",
       "stat_decimal",
